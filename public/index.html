@@ -25,7 +25,7 @@
   --gold: #B45309;
   --gold-light: #FFFBEB;
   --border: rgba(28,25,23,0.1);
-  --border2: rgba(28,25,23,0.06);
+  --border2: rgba(28,25,23,0.06); 
   --r: 12px;
   --rs: 8px;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
@@ -364,8 +364,9 @@ textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)
 // ══════════════════════════════════
 // CONFIG — Supabase URL & Anon Key
 // ══════════════════════════════════
-const SUPA_URL = 'YOUR_SUPABASE_URL';      // ← 여기에 입력
-const SUPA_ANON = 'YOUR_SUPABASE_ANON_KEY'; // ← 여기에 입력
+const SUPA_URL = https://tcmosextaendjhiuajns.supabase.co
+;      // ← 여기에 입력
+const SUPA_ANON = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbW9zZXh0YWVuZGpoaXVham5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjIwNTgsImV4cCI6MjA5NDAzODA1OH0.cGQ2aI5qr4vuUtfgVbBrUevlPbWujWbQImN9sv8h7XY; // ← 여기에 입력
 const API_BASE = '';  // Vercel 배포시 동일 도메인 사용 (공백 유지)
 
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
