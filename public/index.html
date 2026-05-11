@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -25,7 +25,7 @@
   --gold: #B45309;
   --gold-light: #FFFBEB;
   --border: rgba(28,25,23,0.1);
-  --border2: rgba(28,25,23,0.06); 
+  --border2: rgba(28,25,23,0.06);
   --r: 12px;
   --rs: 8px;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
@@ -364,9 +364,8 @@ textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)
 // ══════════════════════════════════
 // CONFIG — Supabase URL & Anon Key
 // ══════════════════════════════════
-const SUPA_URL = 'https://tcmosextaendjhiuajns.supabase.co'
-;      // ← 여기에 입력
-const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbW9zZXh0YWVuZGpoaXVham5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjIwNTgsImV4cCI6MjA5NDAzODA1OH0.cGQ2aI5qr4vuUtfgVbBrUevlPbWujWbQImN9sv8h7XY'; // ← 여기에 입력
+const SUPA_URL = 'YOUR_SUPABASE_URL';      // ← 여기에 입력
+const SUPA_ANON = 'YOUR_SUPABASE_ANON_KEY'; // ← 여기에 입력
 const API_BASE = '';  // Vercel 배포시 동일 도메인 사용 (공백 유지)
 
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
@@ -482,14 +481,30 @@ function translateAuthError(msg) {
 
 async function onLogin(user) {
   currentUser = user;
-  // check admin role
-  const { data: profile } = await supa.from('profiles').select('role,name').eq('id', user.id).single();
+
+  let profile = null;
+  try {
+    const { data, error } = await supa.from('profiles').select('role,name').eq('id', user.id).single();
+    if (!error) profile = data;
+    if (!profile) {
+      await supa.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.email.split('@')[0],
+        role: 'user'
+      }, { onConflict: 'id' });
+      const { data: d2 } = await supa.from('profiles').select('role,name').eq('id', user.id).single();
+      profile = d2;
+    }
+  } catch(e) {
+    console.warn('프로필 조회 실패:', e);
+  }
+
   isAdmin = profile?.role === 'admin';
-  const displayName = profile?.name || user.email.split('@')[0];
+  const displayName = profile?.name || user.user_metadata?.name || user.email.split('@')[0];
 
   document.getElementById('nav-user').textContent = displayName;
   document.getElementById('admin-tab').style.display = isAdmin ? 'block' : 'none';
-
   document.getElementById('screen-auth').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
 
