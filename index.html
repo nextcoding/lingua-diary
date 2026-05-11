@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinguaDiary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #F6F3EE;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE7;
+  --surface3: #E8E4DC;
+  --ink: #1C1917;
+  --ink2: #44403C;
+  --ink3: #A8A29E;
+  --accent: #2D6A4F;
+  --accent2: #40916C;
+  --accent-light: #D8F3DC;
+  --warn: #C2410C;
+  --warn-light: #FFF7ED;
+  --gold: #B45309;
+  --gold-light: #FFFBEB;
+  --border: rgba(28,25,23,0.1);
+  --border2: rgba(28,25,23,0.06);
+  --r: 12px;
+  --rs: 8px;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
+  --font-d: 'Playfair Display', serif;
+  --font-b: 'DM Sans', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.6}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+
+/* ── AUTH SCREEN ── */
+#screen-auth{align-items:center;justify-content:center;padding:2rem}
+.auth-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  box-shadow:var(--shadow);padding:2.5rem;width:100%;max-width:400px;
+}
+.auth-logo{font-family:var(--font-d);font-size:28px;color:var(--ink);text-align:center;margin-bottom:.25rem}
+.auth-logo span{color:var(--accent)}
+.auth-sub{text-align:center;font-size:13px;color:var(--ink3);margin-bottom:2rem}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:1.5rem;overflow:hidden}
+.auth-tab{flex:1;padding:9px;font-size:14px;background:none;border:none;cursor:pointer;color:var(--ink3);font-family:var(--font-b);transition:.15s}
+.auth-tab.active{background:var(--ink);color:#fff;font-weight:500}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:.4rem;letter-spacing:.04em}
+.field input{
+  width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--rs);
+  font-family:var(--font-b);font-size:14px;background:var(--surface2);color:var(--ink);
+  transition:border-color .15s;
+}
+.field input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.btn{
+  width:100%;padding:11px;border-radius:var(--rs);font-family:var(--font-b);
+  font-size:14px;font-weight:500;cursor:pointer;border:none;transition:.15s;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-primary:disabled{background:var(--surface3);color:var(--ink3);cursor:not-allowed}
+.auth-err{margin-top:.75rem;padding:10px 12px;border-radius:var(--rs);background:#FEF2F2;color:#991B1B;font-size:13px}
+.auth-switch{text-align:center;margin-top:1rem;font-size:13px;color:var(--ink3)}
+.auth-switch a{color:var(--accent);cursor:pointer;text-decoration:none}
+
+/* ── APP SCREEN ── */
+#screen-app{flex-direction:column}
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(246,243,238,.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;padding:0 1.5rem;gap:0;
+}
+.nav-logo{font-family:var(--font-d);font-size:19px;color:var(--ink);padding:.9rem 0;margin-right:1.5rem;white-space:nowrap}
+.nav-logo span{color:var(--accent)}
+.nav-tabs{display:flex;flex:1;overflow-x:auto}
+.nav-tab{
+  padding:.9rem 1.1rem;font-size:13px;color:var(--ink3);cursor:pointer;
+  border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+  white-space:nowrap;font-family:var(--font-b);transition:.15s;
+}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:auto;padding-left:1rem;flex-shrink:0}
+.user-badge{font-size:12px;color:var(--ink3)}
+.btn-sm{
+  padding:6px 14px;border-radius:999px;font-size:12px;font-weight:500;
+  cursor:pointer;border:1px solid var(--border);background:var(--surface2);
+  color:var(--ink2);font-family:var(--font-b);transition:.15s;
+}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+
+.page{display:none;padding:2rem 1.5rem;max-width:840px;margin:0 auto;width:100%}
+.page.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.25rem}
+.card-title{font-family:var(--font-d);font-size:18px;margin-bottom:1.1rem}
+.clabel{font-size:11px;font-weight:500;letter-spacing:.07em;color:var(--ink3);text-transform:uppercase;margin-bottom:.6rem}
+
+/* ── LANG PILLS ── */
+.lang-pills{display:flex;gap:8px;flex-wrap:wrap}
+.lang-pill{
+  padding:7px 18px;border-radius:999px;border:1.5px solid var(--border);
+  background:var(--surface2);color:var(--ink2);font-size:13px;cursor:pointer;transition:.15s;
+  font-family:var(--font-b);
+}
+.lang-pill:hover{border-color:var(--accent);color:var(--accent)}
+.lang-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+
+/* ── TEXTAREA ── */
+textarea{
+  width:100%;min-height:190px;padding:1rem 1.1rem;
+  font-family:var(--font-b);font-size:15px;line-height:1.8;
+  border:1.5px solid var(--border);border-radius:var(--rs);
+  background:var(--surface2);color:var(--ink);resize:vertical;transition:.15s;
+}
+textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+
+/* ── ACTION ROW ── */
+.action-row{display:flex;justify-content:space-between;align-items:center;margin-top:.6rem;flex-wrap:wrap;gap:.5rem}
+.char-count{font-size:12px;color:var(--ink3)}
+.action-btns{display:flex;gap:8px}
+.btn-outline{
+  padding:9px 20px;border-radius:999px;font-size:13px;font-weight:500;
+  cursor:pointer;border:1.5px solid var(--border);background:none;
+  color:var(--ink2);font-family:var(--font-b);transition:.15s;
+}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-analyze{
+  padding:9px 22px;border-radius:999px;font-size:13px;font-weight:500;
+  cursor:pointer;border:none;background:var(--accent);color:#fff;
+  font-family:var(--font-b);transition:.15s;
+}
+.btn-analyze:hover{background:var(--accent2)}
+.btn-analyze:disabled{background:var(--surface3);color:var(--ink3);cursor:not-allowed}
+
+/* ── TOPIC CHIPS ── */
+.topics-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:.75rem}
+.topic-btn{
+  padding:6px 14px;border-radius:999px;font-size:13px;
+  border:1px solid var(--border);background:var(--surface2);color:var(--ink2);
+  cursor:pointer;transition:.15s;font-family:var(--font-b);
+}
+.topic-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ── LOADING ── */
+.loading-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3.5rem}
+.spinner{width:34px;height:34px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:1rem;font-size:14px;color:var(--ink3)}
+
+/* ── RESULT ── */
+.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin:1.1rem 0}
+.score-chip{background:var(--surface2);border-radius:var(--rs);padding:12px;text-align:center}
+.score-chip.hl{background:var(--accent-light)}
+.score-num{font-family:var(--font-d);font-size:26px;color:var(--ink)}
+.score-chip.hl .score-num{color:var(--accent)}
+.score-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+
+.level-banner{
+  background:linear-gradient(135deg,#1C1917,#3D3830);border-radius:var(--r);
+  padding:1.25rem 1.5rem;color:#fff;margin:1.1rem 0;display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap;
+}
+.lv-main{flex:1}
+.lv-label{font-size:11px;font-weight:500;letter-spacing:.07em;opacity:.55;margin-bottom:.3rem}
+.lv-name{font-family:var(--font-d);font-size:22px;margin-bottom:.25rem}
+.lv-desc{font-size:13px;opacity:.7;line-height:1.5}
+.lv-badges{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.lbadge{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:500;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1)}
+
+.a-title{font-size:11px;font-weight:500;letter-spacing:.07em;color:var(--ink3);text-transform:uppercase;margin-bottom:.7rem;display:flex;align-items:center;gap:6px}
+.a-title::after{content:'';flex:1;height:1px;background:var(--border2)}
+.a-sec{margin-bottom:1.4rem}
+
+.corrected-box{background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 var(--rs) var(--rs) 0;padding:1rem 1.1rem;font-size:15px;line-height:1.8;color:var(--ink)}
+.overall-text{font-family:var(--font-d);font-style:italic;font-size:15px;line-height:1.8;border-left:3px solid var(--gold);padding-left:1rem;color:var(--ink)}
+
+.err-item{background:var(--surface2);border-left:3px solid var(--warn);border-radius:0 var(--rs) var(--rs) 0;padding:.8rem 1rem;margin-bottom:8px}
+.err-orig{font-size:13px;color:var(--warn);margin-bottom:3px}
+.err-fix{font-size:13px;color:var(--accent);margin-bottom:3px}
+.err-why{font-size:13px;color:var(--ink2)}
+.good-item{display:flex;gap:8px;padding:.45rem 0;font-size:14px;color:var(--ink2);border-bottom:1px solid var(--border2)}
+.good-item:last-child{border-bottom:none}
+.expr-item{display:flex;align-items:baseline;gap:9px;padding:.55rem 0;border-bottom:1px solid var(--border2);flex-wrap:wrap}
+.expr-item:last-child{border-bottom:none}
+.expr-word{font-weight:500;font-size:15px}
+.expr-pron{font-size:12px;color:var(--ink3)}
+.expr-meaning{font-size:13px;color:var(--ink2);margin-left:auto}
+.challenge-box{background:var(--gold-light);border:1px solid rgba(180,83,9,.15);border-radius:var(--rs);padding:1rem 1.1rem;font-size:14px;color:var(--ink);line-height:1.7}
+
+/* ── DASHBOARD ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.1rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;box-shadow:var(--shadow)}
+.stat-num{font-family:var(--font-d);font-size:30px}
+.stat-label{font-size:12px;color:var(--ink3);margin-top:3px}
+.stat-sub{font-size:11px;color:var(--accent);margin-top:3px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem 1.5rem;box-shadow:var(--shadow);margin-bottom:1.1rem}
+.chart-header{display:flex;align-items:center;gap:8px;margin-bottom:1.1rem;flex-wrap:wrap}
+.chart-title{font-family:var(--font-d);font-size:16px;flex:1}
+.chart-filter{display:flex;gap:5px}
+.cf-btn{padding:4px 11px;border-radius:999px;font-size:11px;border:1px solid var(--border);background:var(--surface2);color:var(--ink3);cursor:pointer;font-family:var(--font-b)}
+.cf-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.chart-wrap{position:relative;height:180px}
+
+/* ── ERROR TRACKER ── */
+.et-item{display:flex;gap:12px;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--border2)}
+.et-item:last-child{border-bottom:none}
+.et-count{min-width:26px;height:26px;border-radius:50%;background:var(--warn-light);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;border:1px solid rgba(194,65,12,.15)}
+.et-body{flex:1}
+.et-word{font-weight:500;font-size:15px;margin-bottom:2px}
+.et-fix{font-size:13px;color:var(--accent);margin-bottom:2px}
+.et-why{font-size:13px;color:var(--ink3)}
+
+/* ── HISTORY ── */
+.hi-item{display:flex;gap:14px;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--border2);cursor:pointer;transition:.15s}
+.hi-item:hover{opacity:.7}
+.hi-item:last-child{border-bottom:none}
+.hi-date{min-width:38px;text-align:center}
+.hi-day{font-family:var(--font-d);font-size:20px}
+.hi-mon{font-size:11px;color:var(--ink3)}
+.hi-body{flex:1;min-width:0}
+.hi-meta{display:flex;gap:7px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+.hi-lang{font-size:11px;padding:2px 9px;border-radius:999px;background:var(--accent-light);color:var(--accent);font-weight:500}
+.hi-cefr{font-size:11px;padding:2px 9px;border-radius:999px;background:var(--surface2);color:var(--ink2)}
+.hi-score{font-size:11px;color:var(--ink3);margin-left:auto}
+.hi-preview{font-size:14px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── ADMIN ── */
+.admin-user-item{display:flex;align-items:center;gap:12px;padding:.85rem 0;border-bottom:1px solid var(--border2)}
+.admin-user-item:last-child{border-bottom:none}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--accent);flex-shrink:0}
+.user-info{flex:1}
+.user-email{font-size:14px;color:var(--ink);font-weight:500}
+.user-meta{font-size:12px;color:var(--ink3);margin-top:1px}
+.user-badge-admin{font-size:11px;padding:2px 9px;border-radius:999px;background:#FEF3C7;color:#92400E;font-weight:500;border:1px solid rgba(146,64,14,.1)}
+.user-badge-user{font-size:11px;padding:2px 9px;border-radius:999px;background:var(--surface2);color:var(--ink3);border:1px solid var(--border)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:3.5rem 1rem;color:var(--ink3)}
+.empty-icon{font-size:44px;margin-bottom:.75rem}
+
+/* ── ERROR MSG ── */
+.err-msg{background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--rs);padding:.8rem 1rem;font-size:13px;color:#991B1B;margin-top:.6rem}
+
+/* ── ANIM ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .3s ease forwards}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  nav{padding:0 1rem}
+  .page{padding:1.25rem 1rem}
+  .card{padding:1.1rem}
+  .level-banner{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="screen active" id="screen-auth">
+  <div class="auth-card">
+    <div class="auth-logo">Lingua<span>Diary</span></div>
+    <div class="auth-sub">AI가 분석해주는 언어 학습 일기</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">로그인</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">회원가입</button>
+    </div>
+    <div class="field">
+      <label>이메일</label>
+      <input type="email" id="auth-email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <input type="password" id="auth-password" placeholder="8자 이상">
+    </div>
+    <div class="field" id="field-name" style="display:none">
+      <label>이름 (선택)</label>
+      <input type="text" id="auth-name" placeholder="홍길동">
+    </div>
+    <button class="btn btn-primary" id="auth-btn" onclick="doAuth()">로그인</button>
+    <div id="auth-err"></div>
+    <div class="auth-switch" id="auth-switch-text">
+      계정이 없으신가요? <a onclick="switchAuthTab('signup')">회원가입</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div class="screen" id="screen-app">
+  <nav>
+    <div class="nav-logo">Lingua<span>Diary</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('write')">✏️ 일기 쓰기</button>
+      <button class="nav-tab" onclick="showPage('dashboard')">📊 대시보드</button>
+      <button class="nav-tab" onclick="showPage('errors')">⚠️ 반복 오류</button>
+      <button class="nav-tab" onclick="showPage('history')">📚 기록</button>
+      <button class="nav-tab" id="admin-tab" style="display:none" onclick="showPage('admin')">⚙️ 관리자</button>
+    </div>
+    <div class="nav-right">
+      <span class="user-badge" id="nav-user"></span>
+      <button class="btn-sm" onclick="logout()">로그아웃</button>
+    </div>
+  </nav>
+
+  <!-- WRITE PAGE -->
+  <div class="page active" id="page-write">
+    <div class="card">
+      <div class="clabel">언어 선택</div>
+      <div class="lang-pills">
+        <button class="lang-pill active" onclick="setLang('en',this)">🇺🇸 영어</button>
+        <button class="lang-pill" onclick="setLang('zh',this)">🇨🇳 중국어</button>
+        <button class="lang-pill" onclick="setLang('ja',this)">🇯🇵 일본어</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.7rem;flex-wrap:wrap;gap:.5rem">
+        <div class="clabel" style="margin-bottom:0">오늘의 일기</div>
+        <div id="topic-area"></div>
+      </div>
+      <textarea id="diary-input" placeholder="오늘 있었던 일을 자유롭게 써보세요..."></textarea>
+      <div class="action-row">
+        <span class="char-count" id="char-count">0자</span>
+        <div class="action-btns">
+          <button class="btn-outline" onclick="getTopics()">💡 주제 추천</button>
+          <button class="btn-analyze" id="analyze-btn" onclick="analyze()" disabled>AI 분석 →</button>
+        </div>
+      </div>
+      <div id="write-err"></div>
+    </div>
+    <div id="result-area"></div>
+  </div>
+
+  <!-- DASHBOARD PAGE -->
+  <div class="page" id="page-dashboard">
+    <div id="dashboard-content"></div>
+  </div>
+
+  <!-- ERRORS PAGE -->
+  <div class="page" id="page-errors">
+    <div id="errors-content"></div>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div class="page" id="page-history">
+    <div id="history-content"></div>
+  </div>
+
+  <!-- ADMIN PAGE -->
+  <div class="page" id="page-admin">
+    <div id="admin-content"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════
+// CONFIG — Supabase URL & Anon Key
+// ══════════════════════════════════
+const SUPA_URL = 'https://tcmosextaendjhiuajns.supabase.co';      // ← 여기에 입력
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbW9zZXh0YWVuZGpoaXVham5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjIwNTgsImV4cCI6MjA5NDAzODA1OH0.cGQ2aI5qr4vuUtfgVbBrUevlPbWujWbQImN9sv8h7XY
+'; // ← 여기에 입력
+const API_BASE = '';  // Vercel 배포시 동일 도메인 사용 (공백 유지)
+
+const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
+
+// ══════════════════════════════════
+// STATE
+// ══════════════════════════════════
+let currentUser = null;
+let currentLang = 'en';
+let diaryHistory = [];
+let errorTracker = {};
+let chartInstances = {};
+let isAdmin = false;
+
+// ══════════════════════════════════
+// LANG CONFIG
+// ══════════════════════════════════
+const LANGS = {
+  en: { name:'English', flag:'🇺🇸', label:'영어',
+    placeholder:'What did you do today? Write freely in English...',
+    topics:['My morning routine','A challenge I faced','Something I learned','Weekend plans','My favorite food','A memorable trip','My goals this month','Technology & me'] },
+  zh: { name:'中文', flag:'🇨🇳', label:'중국어',
+    placeholder:'今天你做了什么？用中文自由写作吧...',
+    topics:['我的日常生活','今天的挑战','我学到的东西','周末计划','我喜欢的食物','难忘的旅行','本月目标','科技与我'] },
+  ja: { name:'日本語', flag:'🇯🇵', label:'일본어',
+    placeholder:'今日は何をしましたか？日本語で自由に書いてみてください...',
+    topics:['私の日課','今日の挑戦','学んだこと','週末の計画','好きな食べ物','思い出の旅','今月の目標','テクノロジー'] }
+};
+
+// ══════════════════════════════════
+// AUTH
+// ══════════════════════════════════
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>{
+    t.classList.toggle('active', (mode==='login'&&i===0)||(mode==='signup'&&i===1));
+  });
+  document.getElementById('field-name').style.display = mode==='signup' ? 'block' : 'none';
+  document.getElementById('auth-btn').textContent = mode==='login' ? '로그인' : '회원가입';
+  document.getElementById('auth-switch-text').innerHTML = mode==='login'
+    ? '계정이 없으신가요? <a onclick="switchAuthTab(\'signup\')">회원가입</a>'
+    : '이미 계정이 있으신가요? <a onclick="switchAuthTab(\'login\')">로그인</a>';
+  document.getElementById('auth-err').innerHTML = '';
+}
+
+async function doAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw    = document.getElementById('auth-password').value;
+  const name  = document.getElementById('auth-name').value.trim();
+  const btn   = document.getElementById('auth-btn');
+  const errEl = document.getElementById('auth-err');
+
+  if (!email || !pw) { errEl.innerHTML='<div class="auth-err">이메일과 비밀번호를 입력해주세요.</div>'; return; }
+  btn.disabled = true; btn.textContent = '처리 중...';
+  errEl.innerHTML = '';
+
+  try {
+    let res;
+    if (authMode === 'login') {
+      res = await supa.auth.signInWithPassword({ email, password: pw });
+    } else {
+      res = await supa.auth.signUp({ email, password: pw, options: { data: { name: name||email.split('@')[0] } } });
+      if (!res.error && res.data.user && !res.data.session) {
+        errEl.innerHTML = '<div class="auth-err" style="background:#F0FDF4;color:#166534;border-color:#BBF7D0">이메일 인증 링크를 확인해주세요!</div>';
+        btn.disabled=false; btn.textContent='회원가입'; return;
+      }
+    }
+    if (res.error) throw res.error;
+    await onLogin(res.data.user);
+  } catch(e) {
+    errEl.innerHTML = `<div class="auth-err">${translateAuthError(e.message)}</div>`;
+    btn.disabled=false; btn.textContent = authMode==='login'?'로그인':'회원가입';
+  }
+}
+
+function translateAuthError(msg) {
+  if (msg.includes('Invalid login')) return '이메일 또는 비밀번호가 올바르지 않습니다.';
+  if (msg.includes('already registered')) return '이미 가입된 이메일입니다. 로그인해주세요.';
+  if (msg.includes('Password should be')) return '비밀번호는 6자 이상이어야 합니다.';
+  return msg;
+}
+
+async function onLogin(user) {
+  currentUser = user;
+  // check admin role
+  const { data: profile } = await supa.from('profiles').select('role,name').eq('id', user.id).single();
+  isAdmin = profile?.role === 'admin';
+  const displayName = profile?.name || user.email.split('@')[0];
+
+  document.getElementById('nav-user').textContent = displayName;
+  document.getElementById('admin-tab').style.display = isAdmin ? 'block' : 'none';
+
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+
+  await loadUserData();
+  init();
+}
+
+async function logout() {
+  await supa.auth.signOut();
+  currentUser = null; diaryHistory = []; errorTracker = {}; isAdmin = false;
+  Object.values(chartInstances).forEach(c => c.destroy && c.destroy());
+  chartInstances = {};
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-auth').classList.add('active');
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('diary-input').value = '';
+}
+
+// ══════════════════════════════════
+// DATA LAYER (Supabase)
+// ══════════════════════════════════
+async function loadUserData() {
+  // load diary entries
+  const { data: entries } = await supa.from('diary_entries')
+    .select('*').eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false }).limit(100);
+  diaryHistory = entries || [];
+
+  // load error tracker
+  const { data: errs } = await supa.from('error_tracker')
+    .select('*').eq('user_id', currentUser.id);
+  errorTracker = {};
+  (errs||[]).forEach(e => { errorTracker[e.error_key] = e; });
+}
+
+async function saveEntry(entry) {
+  const { data, error } = await supa.from('diary_entries').insert({
+    user_id: currentUser.id,
+    lang: entry.lang,
+    text: entry.text,
+    result: entry.result,
+    created_at: new Date().toISOString()
+  }).select().single();
+  if (!error && data) diaryHistory.unshift(data);
+}
+
+async function saveErrors(newErrors, lang) {
+  for (const e of newErrors) {
+    const key = e.original.slice(0,80) + '|' + lang;
+    const existing = errorTracker[key];
+    if (existing) {
+      const { data } = await supa.from('error_tracker').update({
+        count: (existing.count||0)+1,
+        corrected: e.corrected,
+        explanation_ko: e.explanation_ko,
+        updated_at: new Date().toISOString()
+      }).eq('id', existing.id).select().single();
+      if (data) errorTracker[key] = data;
+    } else {
+      const { data } = await supa.from('error_tracker').insert({
+        user_id: currentUser.id,
+        error_key: key,
+        original: e.original,
+        corrected: e.corrected,
+        explanation_ko: e.explanation_ko,
+        lang,
+        count: 1,
+        updated_at: new Date().toISOString()
+      }).select().single();
+      if (data) errorTracker[key] = data;
+    }
+  }
+}
+
+// ══════════════════════════════════
+// INIT
+// ══════════════════════════════════
+function init() {
+  const input = document.getElementById('diary-input');
+  input.addEventListener('input', () => {
+    const len = input.value.length;
+    document.getElementById('char-count').textContent = len + '자';
+    document.getElementById('analyze-btn').disabled = len < 15;
+  });
+  setLang('en', document.querySelector('.lang-pill.active'));
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const map = {write:0,dashboard:1,errors:2,history:3,admin:4};
+  if (tabs[map[p]]) tabs[map[p]].classList.add('active');
+  if (p==='dashboard') renderDashboard();
+  if (p==='errors') renderErrors();
+  if (p==='history') renderHistory();
+  if (p==='admin') renderAdmin();
+}
+
+function setLang(code, el) {
+  currentLang = code;
+  document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('diary-input').placeholder = LANGS[code].placeholder;
+  document.getElementById('topic-area').innerHTML = '';
+}
+
+// ══════════════════════════════════
+// TOPICS
+// ══════════════════════════════════
+async function getTopics() {
+  const area = document.getElementById('topic-area');
+  area.innerHTML = '<span style="font-size:12px;color:var(--ink3)">주제 생성 중...</span>';
+  try {
+    const res = await fetch(API_BASE + '/api/topics', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ lang: currentLang, langName: LANGS[currentLang].name })
+    });
+    const data = await res.json();
+    const topics = data.topics || LANGS[currentLang].topics;
+    area.innerHTML = '<div class="topics-wrap">' + topics.map(t =>
+      `<button class="topic-btn" onclick="useTopic(this)">${t}</button>`
+    ).join('') + '</div>';
+  } catch(e) {
+    area.innerHTML = '<div class="topics-wrap">' + LANGS[currentLang].topics.map(t =>
+      `<button class="topic-btn" onclick="useTopic(this)">${t}</button>`
+    ).join('') + '</div>';
+  }
+}
+
+function useTopic(el) {
+  const input = document.getElementById('diary-input');
+  const prompts = { en:`Today's topic: "${el.textContent}"\n\n`, zh:`今天的主题：「${el.textContent}」\n\n`, ja:`今日のテーマ：「${el.textContent}」\n\n` };
+  input.value = prompts[currentLang];
+  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+  document.getElementById('char-count').textContent = input.value.length + '자';
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('topic-area').innerHTML = '';
+}
+
+// ══════════════════════════════════
+// ANALYZE
+// ══════════════════════════════════
+async function analyze() {
+  const text = document.getElementById('diary-input').value.trim();
+  if (text.length < 15) return;
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('write-err').innerHTML = '';
+  document.getElementById('result-area').innerHTML = `<div class="card"><div class="loading-card"><div class="spinner"></div><div class="loading-text">AI가 일기를 분석하는 중...</div></div></div>`;
+
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const res = await fetch(API_BASE + '/api/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body: JSON.stringify({ text, lang: currentLang })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '서버 오류');
+
+    const r = data.result;
+    const entry = { lang: currentLang, text, result: r };
+    await saveEntry(entry);
+    await saveErrors(r.errors || [], currentLang);
+
+    renderResult(r, { lang: currentLang, text });
+  } catch(e) {
+    document.getElementById('result-area').innerHTML = '';
+    document.getElementById('write-err').innerHTML = `<div class="err-msg">오류: ${e.message}</div>`;
+  }
+  document.getElementById('analyze-btn').disabled = false;
+}
+
+// ══════════════════════════════════
+// RENDER RESULT
+// ══════════════════════════════════
+function renderResult(r, entry) {
+  const lang = LANGS[entry.lang];
+  const lv = r.level || {};
+  const avg = Math.round(((r.grammar_score||0)+(r.vocab_score||0)+(r.naturalness_score||0))/3);
+
+  let badges = `<span class="lbadge">CEFR ${lv.cefr||'—'}</span>`;
+  if (entry.lang==='en') {
+    if (lv.toeic_range&&lv.toeic_range!=='N/A') badges+=`<span class="lbadge">TOEIC ${lv.toeic_range}</span>`;
+    if (lv.toefl_range&&lv.toefl_range!=='N/A') badges+=`<span class="lbadge">TOEFL ${lv.toefl_range}</span>`;
+  }
+  if (entry.lang==='zh'&&lv.hsk) badges+=`<span class="lbadge">HSK ${lv.hsk}</span>`;
+  if (entry.lang==='ja'&&lv.jlpt) badges+=`<span class="lbadge">JLPT ${lv.jlpt}</span>`;
+
+  const errHtml = (r.errors||[]).slice(0,4).map(e=>`
+    <div class="err-item">
+      <div class="err-orig">✗ ${e.original}</div>
+      <div class="err-fix">✓ ${e.corrected}</div>
+      <div class="err-why">${e.explanation_ko}</div>
+    </div>`).join('')||'<p style="font-size:14px;color:var(--ink3)">오류가 발견되지 않았습니다! 훌륭해요 🎉</p>';
+
+  const goodHtml = (r.good_points||[]).map(g=>`<div class="good-item"><span>✦</span><span>${g}</span></div>`).join('');
+  const exprHtml = (r.new_expressions||[]).slice(0,3).map(e=>{
+    let pron = entry.lang==='zh'?e.pinyin||'':entry.lang==='ja'?e.reading||'':'';
+    return `<div class="expr-item"><span class="expr-word">${e.expression}</span>${pron?`<span class="expr-pron">${pron}</span>`:''}<span class="expr-meaning">→ ${e.meaning_ko}</span></div>`;
+  }).join('');
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="card fade-up">
+      <div class="card-title">분석 결과 — ${lang.flag} ${lang.name}</div>
+      <div class="score-grid">
+        <div class="score-chip hl"><div class="score-num">${avg}</div><div class="score-sub">종합</div></div>
+        <div class="score-chip"><div class="score-num">${r.grammar_score}</div><div class="score-sub">문법</div></div>
+        <div class="score-chip"><div class="score-num">${r.vocab_score}</div><div class="score-sub">어휘</div></div>
+        <div class="score-chip"><div class="score-num">${r.naturalness_score}</div><div class="score-sub">자연스러움</div></div>
+      </div>
+      <div class="level-banner">
+        <div class="lv-main"><div class="lv-label">현재 언어 수준</div><div class="lv-name">${lv.grade||'—'}</div><div class="lv-desc">${lv.summary_ko||''}</div></div>
+        <div class="lv-badges">${badges}</div>
+      </div>
+      <div class="a-sec"><div class="a-title">총평</div><p class="overall-text">${r.overall}</p></div>
+      <div class="a-sec"><div class="a-title">교정된 일기</div><div class="corrected-box">${(r.corrected||'').replace(/\n/g,'<br>')}</div></div>
+      <div class="a-sec"><div class="a-title">교정 포인트 (${(r.errors||[]).length}개)</div>${errHtml}</div>
+      ${goodHtml?`<div class="a-sec"><div class="a-title">잘 쓴 부분</div>${goodHtml}</div>`:''}
+      ${exprHtml?`<div class="a-sec"><div class="a-title">오늘의 표현</div>${exprHtml}</div>`:''}
+      <div class="a-sec" style="margin-bottom:0"><div class="a-title">내일의 도전 과제</div><div class="challenge-box">🎯 ${r.next_challenge}</div></div>
+    </div>`;
+}
+
+// ══════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════
+function renderDashboard() {
+  const area = document.getElementById('dashboard-content');
+  if (!diaryHistory.length) { area.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><p>아직 데이터가 없습니다.<br>일기를 작성하면 통계가 나타납니다.</p></div>`; return; }
+  const total = diaryHistory.length;
+  const langs = {en:0,zh:0,ja:0};
+  diaryHistory.forEach(h=>{ if(langs[h.lang]!==undefined) langs[h.lang]++; });
+  const topLang = Object.entries(langs).sort((a,b)=>b[1]-a[1])[0][0].toUpperCase();
+  const streak = calcStreak();
+  const latestCEFR = diaryHistory.find(h=>h.result?.level?.cefr)?.result.level.cefr || '—';
+
+  const avgScores = {};
+  ['en','zh','ja'].forEach(l=>{
+    const es = diaryHistory.filter(h=>h.lang===l&&h.result);
+    if (es.length) avgScores[l] = Math.round(es.reduce((s,h)=>s+Math.round(((h.result.grammar_score||0)+(h.result.vocab_score||0)+(h.result.naturalness_score||0))/3),0)/es.length);
+  });
+
+  area.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">총 일기 수</div><div class="stat-sub">꾸준히 쓰는 중!</div></div>
+      <div class="stat-card"><div class="stat-num">${streak}</div><div class="stat-label">연속 작성</div><div class="stat-sub">🔥 Keep going</div></div>
+      <div class="stat-card"><div class="stat-num">${latestCEFR}</div><div class="stat-label">현재 CEFR</div><div class="stat-sub">최신 기준</div></div>
+      <div class="stat-card"><div class="stat-num">${topLang}</div><div class="stat-label">주력 언어</div><div class="stat-sub">${langs.en}EN · ${langs.zh}ZH · ${langs.ja}JA</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">점수 변화 추이</div>
+        <div class="chart-filter">
+          <button class="cf-btn active" onclick="filterChart('all',this)">전체</button>
+          <button class="cf-btn" onclick="filterChart('en',this)">영어</button>
+          <button class="cf-btn" onclick="filterChart('zh',this)">중국어</button>
+          <button class="cf-btn" onclick="filterChart('ja',this)">일본어</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="scoreChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">언어별 평균 점수</div></div>
+      <div class="chart-wrap" style="height:150px"><canvas id="langChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">CEFR 수준 변화</div></div>
+      <div class="chart-wrap"><canvas id="levelChart"></canvas></div>
+    </div>`;
+
+  setTimeout(()=>{ buildScoreChart('all'); buildLangChart(avgScores); buildLevelChart(); }, 50);
+}
+
+function calcStreak() {
+  if (!diaryHistory.length) return 0;
+  const dates = [...new Set(diaryHistory.map(h=>(h.created_at||h.date||'').slice(0,10)))].filter(Boolean).sort().reverse();
+  if (!dates.length) return 0;
+  const today = new Date().toISOString().slice(0,10);
+  if (dates[0] !== today) return 0;
+  let streak = 1;
+  for (let i=1;i<dates.length;i++) {
+    const diff = (new Date(dates[i-1])-new Date(dates[i]))/86400000;
+    if (diff===1) streak++; else break;
+  }
+  return streak;
+}
+
+function filterChart(lang, btn) {
+  document.querySelectorAll('.cf-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  if (chartInstances.score) { chartInstances.score.destroy(); delete chartInstances.score; }
+  buildScoreChart(lang);
+}
+
+function buildScoreChart(langFilter) {
+  const ctx = document.getElementById('scoreChart'); if (!ctx) return;
+  let data = diaryHistory.filter(h=>h.result);
+  if (langFilter!=='all') data = data.filter(h=>h.lang===langFilter);
+  data = data.slice(0,20).reverse();
+  const labels = data.map(h=>{ const d=new Date(h.created_at||h.date); return (d.getMonth()+1)+'/'+(d.getDate()); });
+  chartInstances.score = new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'문법',data:data.map(h=>h.result.grammar_score||0),borderColor:'#2D6A4F',backgroundColor:'rgba(45,106,79,.08)',tension:.4,pointRadius:4,borderWidth:2},
+    {label:'어휘',data:data.map(h=>h.result.vocab_score||0),borderColor:'#B45309',backgroundColor:'rgba(180,83,9,.08)',tension:.4,pointRadius:4,borderWidth:2},
+    {label:'자연스러움',data:data.map(h=>h.result.naturalness_score||0),borderColor:'#6B63B5',backgroundColor:'rgba(107,99,181,.08)',tension:.4,pointRadius:4,borderWidth:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans',size:12},boxWidth:12}}},scales:{y:{min:0,max:100,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+function buildLangChart(avgScores) {
+  const ctx = document.getElementById('langChart'); if (!ctx) return;
+  chartInstances.lang = new Chart(ctx,{type:'bar',data:{labels:['영어','중국어','일본어'],datasets:[{label:'평균',data:[avgScores.en||0,avgScores.zh||0,avgScores.ja||0],backgroundColor:['rgba(45,106,79,.7)','rgba(180,83,9,.7)','rgba(107,99,181,.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:12}}}}}});
+}
+
+function buildLevelChart() {
+  const ctx = document.getElementById('levelChart'); if (!ctx) return;
+  const CM = {'A1':1,'A2':2,'B1':3,'B2':4,'C1':5,'C2':6};
+  const CR = ['','A1','A2','B1','B2','C1','C2'];
+  const data = diaryHistory.filter(h=>h.result?.level?.cefr).slice(0,20).reverse();
+  chartInstances.level = new Chart(ctx,{type:'line',data:{labels:data.map(h=>{ const d=new Date(h.created_at||h.date); return (d.getMonth()+1)+'/'+(d.getDate()); }),datasets:[{label:'CEFR',data:data.map(h=>CM[h.result.level.cefr]||0),borderColor:'#2D6A4F',backgroundColor:'rgba(45,106,79,.08)',tension:.3,pointRadius:5,borderWidth:2.5,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:7,grid:{color:'rgba(0,0,0,.05)'},ticks:{stepSize:1,callback:v=>CR[v]||'',font:{size:12}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+// ══════════════════════════════════
+// ERRORS PAGE
+// ══════════════════════════════════
+function renderErrors() {
+  const area = document.getElementById('errors-content');
+  const errs = Object.values(errorTracker).sort((a,b)=>b.count-a.count);
+  if (!errs.length) { area.innerHTML=`<div class="empty"><div class="empty-icon">✅</div><p>반복 오류가 없습니다.<br>일기를 더 작성하면 패턴이 분석됩니다.</p></div>`; return; }
+  const top = errs[0];
+  let html = `<div class="card" style="background:var(--warn-light);border-color:rgba(194,65,12,.15)">
+    <div class="card-title" style="color:var(--warn);font-size:15px">⚠️ 가장 자주 틀리는 오류</div>
+    <p style="font-size:15px;font-weight:500;margin-bottom:4px">"${top.original}" → "${top.corrected}"</p>
+    <p style="font-size:14px;color:var(--ink2)">${top.explanation_ko}</p>
+    <p style="font-size:12px;color:var(--ink3);margin-top:.5rem">총 ${top.count}회 반복됨</p>
+  </div>`;
+  ['en','zh','ja'].forEach(l=>{
+    const le = errs.filter(e=>e.lang===l); if (!le.length) return;
+    const lang = LANGS[l];
+    html += `<div class="card"><div class="card-title">${lang.flag} ${lang.label} 반복 오류 (${le.length}종)</div>`;
+    le.forEach(e=>{ html+=`<div class="et-item"><div class="et-count">${e.count}회</div><div class="et-body"><div class="et-word">${e.original}</div><div class="et-fix">→ ${e.corrected}</div><div class="et-why">${e.explanation_ko}</div></div></div>`; });
+    html += '</div>';
+  });
+  area.innerHTML = html;
+}
+
+// ══════════════════════════════════
+// HISTORY PAGE
+// ══════════════════════════════════
+function renderHistory() {
+  const area = document.getElementById('history-content');
+  if (!diaryHistory.length) { area.innerHTML=`<div class="empty"><div class="empty-icon">📖</div><p>아직 작성한 일기가 없습니다.</p></div>`; return; }
+  let html = '<div class="card">';
+  diaryHistory.forEach((h,i)=>{
+    const lang = LANGS[h.lang]||LANGS.en;
+    const d = new Date(h.created_at||h.date);
+    const avg = h.result ? Math.round(((h.result.grammar_score||0)+(h.result.vocab_score||0)+(h.result.naturalness_score||0))/3) : null;
+    const cefr = h.result?.level?.cefr||'';
+    html+=`<div class="hi-item" onclick="loadHistory(${i})">
+      <div class="hi-date"><div class="hi-day">${d.getDate()}</div><div class="hi-mon">${d.getMonth()+1}월</div></div>
+      <div class="hi-body">
+        <div class="hi-meta">
+          <span class="hi-lang">${lang.flag} ${lang.label}</span>
+          ${cefr?`<span class="hi-cefr">CEFR ${cefr}</span>`:''}
+          ${avg!==null?`<span class="hi-score">${avg}점</span>`:''}
+        </div>
+        <div class="hi-preview">${h.text}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function loadHistory(i) {
+  const h = diaryHistory[i];
+  document.getElementById('diary-input').value = h.text;
+  document.getElementById('char-count').textContent = h.text.length+'자';
+  document.getElementById('analyze-btn').disabled = false;
+  currentLang = h.lang;
+  document.querySelectorAll('.lang-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.lang-pill')[['en','zh','ja'].indexOf(h.lang)].classList.add('active');
+  if (h.result) renderResult(h.result, h);
+  showPage('write');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════
+// ADMIN PAGE
+// ══════════════════════════════════
+async function renderAdmin() {
+  const area = document.getElementById('admin-content');
+  if (!isAdmin) { area.innerHTML='<div class="empty"><div class="empty-icon">🔒</div><p>관리자 전용 페이지입니다.</p></div>'; return; }
+  area.innerHTML = '<div class="card"><div class="loading-card"><div class="spinner"></div></div></div>';
+
+  const { data: profiles } = await supa.from('profiles').select('*').order('created_at',{ascending:false});
+  const { data: entryCounts } = await supa.from('diary_entries').select('user_id');
+  const countMap = {};
+  (entryCounts||[]).forEach(e=>{ countMap[e.user_id]=(countMap[e.user_id]||0)+1; });
+
+  let html = `<div class="card">
+    <div class="card-title">전체 사용자 (${(profiles||[]).length}명)</div>`;
+  (profiles||[]).forEach(p=>{
+    const initial = (p.name||p.email||'?')[0].toUpperCase();
+    const joined = new Date(p.created_at).toLocaleDateString('ko-KR');
+    html+=`<div class="admin-user-item">
+      <div class="user-avatar">${initial}</div>
+      <div class="user-info">
+        <div class="user-email">${p.name||'이름 없음'} <span style="font-size:12px;color:var(--ink3);font-weight:400">${p.email||''}</span></div>
+        <div class="user-meta">가입일: ${joined} · 일기 ${countMap[p.id]||0}편</div>
+      </div>
+      <span class="${p.role==='admin'?'user-badge-admin':'user-badge-user'}">${p.role==='admin'?'관리자':'일반'}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  // 전체 통계
+  const totalEntries = Object.values(countMap).reduce((a,b)=>a+b,0);
+  html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${(profiles||[]).length}</div><div class="stat-label">총 사용자</div></div>
+    <div class="stat-card"><div class="stat-num">${totalEntries}</div><div class="stat-label">총 일기 수</div></div>
+    <div class="stat-card"><div class="stat-num">${totalEntries?Math.round(totalEntries/(profiles||[]).length):0}</div><div class="stat-label">인당 평균</div></div>
+  </div>` + html;
+
+  area.innerHTML = html;
+}
+
+// ══════════════════════════════════
+// BOOT: check session
+// ══════════════════════════════════
+(async()=>{
+  const { data:{ session } } = await supa.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  }
+})();
+</script>
+</body>
+</html>
